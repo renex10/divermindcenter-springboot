@@ -1,8 +1,9 @@
-// DniServiceImpl.java
 package divermindcenterterapia.divermindcenter.service.impl;
 
 import divermindcenterterapia.divermindcenter.dto.DniDTO;
 import divermindcenterterapia.divermindcenter.entity.Dni;
+import divermindcenterterapia.divermindcenter.exception.DuplicateRutException;
+import divermindcenterterapia.divermindcenter.exception.InvalidRutException;
 import divermindcenterterapia.divermindcenter.repository.DniRepository;
 import divermindcenterterapia.divermindcenter.service.DniService;
 import lombok.RequiredArgsConstructor;
@@ -19,20 +20,39 @@ public class DniServiceImpl implements DniService {
 
     @Override
     public DniDTO createDni(DniDTO dniDto) {
-        // Validación del formato del RUT
+        // ------------------------------------------------------------
+        // PASO 1: Validación del formato del RUT chileno
+        // ------------------------------------------------------------
         if (!isValidRutChileno(dniDto.getValue())) {
-            throw new IllegalArgumentException("Formato de RUT chileno inválido");
+            // Aquí lanzamos excepción si el formato no es válido
+            throw new InvalidRutException(dniDto.getValue(), "Formato de RUT inválido");
         }
 
-        // Conversión y guardado
+        // ------------------------------------------------------------
+        // PASO 2: Limpieza del RUT (eliminar puntos y guión)
+        // ------------------------------------------------------------
+        String rutLimpio = cleanRut(dniDto.getValue());
+
+        // ------------------------------------------------------------
+        // PASO 3: Verificación de RUT duplicado en base de datos
+        // Aquí actualizamos validación rut duplicado
+        // ------------------------------------------------------------
+        if (dniRepository.existsByValue(rutLimpio)) {
+            // Aquí lanzamos excepción si el RUT ya existe
+            throw new DuplicateRutException(dniDto.getValue());
+        }
+
+        // ------------------------------------------------------------
+        // PASO 4: Conversión y guardado del DNI
+        // ------------------------------------------------------------
         Dni dni = mapToEntity(dniDto);
+        dni.setValue(rutLimpio); // Guardamos el RUT limpio
         Dni newDni = dniRepository.save(dni);
 
-        // Retorno del DTO creado
         return mapToDTO(newDni);
     }
 
-    // Métodos requeridos por la interfaz (implementación básica)
+    // Métodos de la interfaz (implementación básica)
     @Override
     public DniDTO getDniById(Long id) {
         return dniRepository.findById(id)
@@ -61,7 +81,13 @@ public class DniServiceImpl implements DniService {
         dniRepository.deleteById(id);
     }
 
-    // Métodos de conversión
+    // ------------------------------------------------------------
+    // MÉTODOS AUXILIARES
+    // ------------------------------------------------------------
+
+    /**
+     * Convierte entidad Dni a DTO
+     */
     private DniDTO mapToDTO(Dni dni) {
         return DniDTO.builder()
                 .id(dni.getId())
@@ -69,6 +95,9 @@ public class DniServiceImpl implements DniService {
                 .build();
     }
 
+    /**
+     * Convierte DTO a entidad Dni
+     */
     private Dni mapToEntity(DniDTO dniDto) {
         return Dni.builder()
                 .id(dniDto.getId())
@@ -76,11 +105,20 @@ public class DniServiceImpl implements DniService {
                 .build();
     }
 
-    // Validación completa del RUT
+    /**
+     * Limpia el RUT eliminando puntos y guión
+     */
+    private String cleanRut(String rut) {
+        return rut.replaceAll("[.-]", "").toUpperCase();
+    }
+
+    /**
+     * Valida un RUT chileno según formato y dígito verificador
+     */
     private boolean isValidRutChileno(String rut) {
         if (rut == null || rut.trim().isEmpty()) return false;
 
-        String rutLimpio = rut.replaceAll("[.-]", "").toUpperCase();
+        String rutLimpio = cleanRut(rut);
         if (rutLimpio.length() < 2) return false;
 
         String cuerpo = rutLimpio.substring(0, rutLimpio.length() - 1);
@@ -93,7 +131,9 @@ public class DniServiceImpl implements DniService {
         return dv == calcularDigitoVerificador(cuerpo);
     }
 
-    // Cálculo del dígito verificador
+    /**
+     * Calcula el dígito verificador de un RUT chileno
+     */
     private char calcularDigitoVerificador(String numeroStr) {
         int suma = 0;
         int multiplicador = 2;
