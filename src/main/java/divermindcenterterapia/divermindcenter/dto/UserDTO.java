@@ -1,7 +1,10 @@
 package divermindcenterterapia.divermindcenter.dto;
 
 import divermindcenterterapia.divermindcenter.entity.*;
+// UserDTO.java
+import divermindcenterterapia.divermindcenter.entity.PracticeType;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class UserDTO {
@@ -17,4 +20,5 @@ public class UserDTO {
     private List<Phone> phones;
     private PracticeType practiceType;
     private RehabilitationCenter rehabilitationCenter;
+    private LocalDateTime createdAt;
 }

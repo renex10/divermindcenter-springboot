@@ -1,44 +1,32 @@
-package divermindcenterterapia.divermindcenter.entity;
+package divermindcenterterapia.divermindcenter.entity; // 🔹 Agrega esta línea
 
+import divermindcenterterapia.divermindcenter.entity.Commune;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-/**
- * Entidad para direcciones físicas
- */
 @Entity
 @Table(name = "addresses")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Address {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /**
-     * Calle o avenida
-     */
     @Column(nullable = false)
     private String street;
 
-    /**
-     * Número exterior
-     */
     @Column(nullable = false)
     private String number;
 
-
-    /**
-     * Referencias adicionales (opcional)
-     */
-    @Column(name = "additional_references") // Evita conflictos con SQL
+    @Column(name = "additional_references")
     private String references;
 
-    /**
-     * Comuna asociada
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "commune_id", nullable = false)
     private Commune commune;

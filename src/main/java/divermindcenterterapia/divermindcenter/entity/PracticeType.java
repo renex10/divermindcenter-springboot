@@ -3,7 +3,8 @@ package divermindcenterterapia.divermindcenter.entity;
 /**
  * Tipo de práctica profesional
  */
+// PracticeType.java
 public enum PracticeType {
-    INDEPENDENT,      // Ejerce de forma independiente
-    CENTER_AFFILIATED // Pertenece a un centro de rehabilitación
+    INDEPENDIENTE,     // Ejerce de forma independiente
+    CENTRO_AFILIADO    // Nombre corregido
 }
