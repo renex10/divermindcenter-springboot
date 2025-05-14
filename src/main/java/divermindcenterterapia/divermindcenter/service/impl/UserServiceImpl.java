@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 
 import java.time.format.DateTimeFormatter;
@@ -139,5 +142,31 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario", "id", id));
 
         return mapToResponseDTO(user);
+    }
+
+    @Override // Indica que esto cumple la promesa del menú
+    public UserPageResponseDTO getPagedUsers(int pageNumber, int pageSize) {
+        // 1. Validar parámetros básicos
+        if (pageNumber < 0) throw new IllegalArgumentException("Número de página no puede ser negativo");
+        if (pageSize <= 0 || pageSize > 100) throw new IllegalArgumentException("Tamaño de página debe ser entre 1 y 100");
+
+        // 2. Crear configuración de paginación
+        Pageable pageConfig = PageRequest.of(pageNumber, pageSize);
+
+        // 3. Obtener página desde la base de datos
+        Page<User> userPage = userRepository.findAll(pageConfig);
+
+        // 4. Convertir usuarios a formato de respuesta
+        List<UserResponseDTO> users = userPage.getContent().stream()
+                .map(this::mapToResponseDTO)
+                .toList();
+
+        // 5. Construir respuesta final
+        return UserPageResponseDTO.builder()
+                .users(users)
+                .currentPage(pageNumber)
+                .totalPages(userPage.getTotalPages())
+                .totalUsers(userPage.getTotalElements())
+                .build();
     }
 }

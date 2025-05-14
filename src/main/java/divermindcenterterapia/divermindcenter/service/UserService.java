@@ -1,5 +1,6 @@
 package divermindcenterterapia.divermindcenter.service;
 
+import divermindcenterterapia.divermindcenter.dto.UserPageResponseDTO;
 import divermindcenterterapia.divermindcenter.dto.UserRegistrationDTO;
 import divermindcenterterapia.divermindcenter.dto.UserResponseDTO;
 import divermindcenterterapia.divermindcenter.exception.*;
@@ -10,4 +11,7 @@ public interface UserService {
             ResourceNotFoundException, PasswordMismatchException;
 
     UserResponseDTO getUserById(Long id) throws ResourceNotFoundException;
+
+
+    UserPageResponseDTO getPagedUsers(int pageNumber, int pageSize);
 }

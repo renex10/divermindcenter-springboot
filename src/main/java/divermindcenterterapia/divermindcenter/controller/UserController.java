@@ -1,5 +1,6 @@
 package divermindcenterterapia.divermindcenter.controller;
 
+import divermindcenterterapia.divermindcenter.dto.UserPageResponseDTO;
 import divermindcenterterapia.divermindcenter.dto.UserRegistrationDTO;
 import divermindcenterterapia.divermindcenter.dto.UserResponseDTO;
 import divermindcenterterapia.divermindcenter.exception.*;
@@ -50,6 +51,20 @@ public class UserController {
             return ResponseEntity.ok(userService.getUserById(id));
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+
+    @GetMapping
+    public ResponseEntity<UserPageResponseDTO> getUsers(
+            @RequestParam(defaultValue = "0") int page,    // Página a mostrar (0 = primera)
+            @RequestParam(defaultValue = "10") int size    // Usuarios por página (10 por defecto)
+    ) {
+        try {
+            UserPageResponseDTO response = userService.getPagedUsers(page, size);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build(); // Error 400 si parámetros son inválidos
         }
     }
 }
