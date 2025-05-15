@@ -13,9 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
-
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,7 +21,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    // Repositorios requeridos
     private final UserRepository userRepository;
     private final DniRepository dniRepository;
     private final AddressRepository addressRepository;
@@ -31,35 +28,32 @@ public class UserServiceImpl implements UserService {
     private final CommuneRepository communeRepository;
     private final CountryRepository countryRepository;
     private final RehabilitationCenterRepository rehabCenterRepository;
-
-    // Inyección de PasswordEncoder para encriptación de contraseñas
+    private final UniversityRepository universityRepository;
+    private final UserProfileRepository userProfileRepository;
+    private final ProfessionalInfoRepository professionalInfoRepository;
     private final PasswordEncoder passwordEncoder;
-
 
     @Override
     @Transactional
     public UserResponseDTO registerUser(UserRegistrationDTO registrationDTO) {
-
-
-        // 1. Validar coincidencia de contraseñas
+        // Verificación de contraseña
         if (!registrationDTO.getPassword().equals(registrationDTO.getConfirmPassword())) {
             throw new PasswordMismatchException("Las contraseñas no coinciden");
         }
 
-        // 2. Verificar email único
+        // Verificación de email único
         if (userRepository.existsByEmail(registrationDTO.getEmail())) {
             throw new DuplicateEmailException("El email ya está registrado");
         }
 
-        // 3. Crear DNI
+        // Creación de DNI
         Dni dni = dniRepository.save(Dni.builder()
                 .value(registrationDTO.getRut())
                 .build());
 
-        // 4. Crear Address con comuna
+        // Creación de dirección
         Commune commune = communeRepository.findById(registrationDTO.getAddress().getCommuneId())
                 .orElseThrow(() -> new ResourceNotFoundException("Comuna", "id", registrationDTO.getAddress().getCommuneId()));
-
 
         Address address = addressRepository.save(Address.builder()
                 .street(registrationDTO.getAddress().getStreet())
@@ -68,7 +62,6 @@ public class UserServiceImpl implements UserService {
                 .commune(commune)
                 .build());
 
-        // 5. Crear User principal
         User user = User.builder()
                 .firstName(registrationDTO.getFirstName())
                 .email(registrationDTO.getEmail())
@@ -78,22 +71,54 @@ public class UserServiceImpl implements UserService {
                 .address(address)
                 .practiceType(registrationDTO.getPracticeType())
                 .rehabilitationCenter(getRehabCenter(registrationDTO))
+                .university(
+                        universityRepository.findById(
+                                registrationDTO.getProfile().getUniversityId() // Paréntesis añadido aquí
+                        ).orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Universidad",
+                                        "id",
+                                        registrationDTO.getProfile().getUniversityId()
+                                )
+                        )
+                )
                 .build();
 
-        User savedUser = userRepository.save(user);
-
-        // 6. Crear teléfonos
+        User savedUser = userRepository.save(user);        // Creación de teléfonos
         createPhones(registrationDTO.getPhones(), savedUser);
+
+        // Creación de perfil
+        UserProfile profile = UserProfile.builder()
+                .lastName(registrationDTO.getProfile().getLastName())
+                .birthDate(registrationDTO.getProfile().getBirthDate())
+                .gender(registrationDTO.getProfile().getGender())
+                .graduationYear(registrationDTO.getProfile().getGraduationYear())
+                .yearsExperience(registrationDTO.getProfile().getYearsExperience())
+                .university(universityRepository.findById(registrationDTO.getProfile().getUniversityId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Universidad", "id", registrationDTO.getProfile().getUniversityId())))
+                .user(savedUser)
+                .build();
+        userProfileRepository.save(profile);
+
+        // Creación de info profesional
+        ProfessionalInfo professionalInfo = ProfessionalInfo.builder()
+                .experienceSummary(registrationDTO.getProfessionalInfo().getExperienceSummary())
+                .biography(registrationDTO.getProfessionalInfo().getBiography()) // Asegúrate de incluir esto
+                .serviceModality(registrationDTO.getProfessionalInfo().getServiceModality())
+                .userProfile(profile)
+                .build();
+        professionalInfoRepository.save(professionalInfo);
 
         return mapToResponseDTO(savedUser);
     }
 
-    // En UserServiceImpl.java
+
+
     private RehabilitationCenter getRehabCenter(UserRegistrationDTO dto) {
-        if (dto.getPracticeType() == PracticeType.CENTRO_AFILIADO) { // Nombre corregido
+        if (dto.getPracticeType() == PracticeType.CENTRO_AFILIADO) {
+            // En getRehabCenter:
             return rehabCenterRepository.findById(dto.getRehabilitationCenterId())
                     .orElseThrow(() -> new ResourceNotFoundException("Centro de rehabilitación", "id", dto.getRehabilitationCenterId()));
-
         }
         return null;
     }
@@ -104,7 +129,6 @@ public class UserServiceImpl implements UserService {
                     .map(phoneDTO -> {
                         Country country = countryRepository.findById(phoneDTO.getCountryId())
                                 .orElseThrow(() -> new ResourceNotFoundException("País", "id", phoneDTO.getCountryId()));
-
 
                         return Phone.builder()
                                 .phoneNumber(phoneDTO.getPhoneNumber())
@@ -119,49 +143,50 @@ public class UserServiceImpl implements UserService {
     }
 
     private UserResponseDTO mapToResponseDTO(User user) {
-        // Formatos para fecha y hora / Date and time formatters
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
 
-        return UserResponseDTO.builder()
+        UserResponseDTO.UserResponseDTOBuilder builder = UserResponseDTO.builder()
                 .id(user.getId())
                 .firstName(user.getFirstName())
                 .email(user.getEmail())
                 .role(user.getRole())
                 .rut(user.getDni().getValue())
                 .practiceType(user.getPracticeType())
-                .rehabilitationCenterId(user.getRehabilitationCenter() != null ?
-                        user.getRehabilitationCenter().getId() : null)
-                .creationDate(user.getCreatedAt().format(dateFormatter)) // Fecha formateada / Formatted date
-                .creationTime(user.getCreatedAt().format(timeFormatter)) // Hora formateada / Formatted time
-                .build(); // Convierte el builder a UserResponseDTO
+                .creationDate(user.getCreatedAt().format(dateFormatter))
+                .creationTime(user.getCreatedAt().format(timeFormatter));
+
+        if (user.getRehabilitationCenter() != null) {
+            builder.rehabilitationCenterId(user.getRehabilitationCenter().getId());
+        }
+
+        if (user.getUniversity() != null) {
+            builder.universityId(user.getUniversity().getId());
+        }
+
+        return builder.build();
     }
+
+
     @Override
     public UserResponseDTO getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario", "id", id));
-
         return mapToResponseDTO(user);
     }
 
-    @Override // Indica que esto cumple la promesa del menú
+    @Override
     public UserPageResponseDTO getPagedUsers(int pageNumber, int pageSize) {
-        // 1. Validar parámetros básicos
-        if (pageNumber < 0) throw new IllegalArgumentException("Número de página no puede ser negativo");
-        if (pageSize <= 0 || pageSize > 100) throw new IllegalArgumentException("Tamaño de página debe ser entre 1 y 100");
+        if (pageNumber < 0) throw new IllegalArgumentException("Número de página inválido");
+        if (pageSize <= 0 || pageSize > 100) throw new IllegalArgumentException("Tamaño de página inválido");
 
-        // 2. Crear configuración de paginación
         Pageable pageConfig = PageRequest.of(pageNumber, pageSize);
-
-        // 3. Obtener página desde la base de datos
         Page<User> userPage = userRepository.findAll(pageConfig);
 
-        // 4. Convertir usuarios a formato de respuesta
         List<UserResponseDTO> users = userPage.getContent().stream()
                 .map(this::mapToResponseDTO)
                 .toList();
 
-        // 5. Construir respuesta final
         return UserPageResponseDTO.builder()
                 .users(users)
                 .currentPage(pageNumber)

@@ -91,6 +91,20 @@ public class User {
     @JoinColumn(name = "rehabilitation_center_id")
     private RehabilitationCenter rehabilitationCenter;
 
+    // Add to User.java entity:
+    /**
+     * University where the therapist studied
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "university_id")
+    private University university;
+
+    /**
+     * Therapist's profile information
+     */
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private UserProfile profile;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

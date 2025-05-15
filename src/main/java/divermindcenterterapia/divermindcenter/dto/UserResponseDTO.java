@@ -22,6 +22,7 @@ public class UserResponseDTO {
     private String rut;
     private PracticeType practiceType;
     private Long rehabilitationCenterId;
+    private Long universityId; // Nuevo campo
     /**
      * Fecha de creación en formato legible (dd/MM/yyyy)
      * Creation date in human-readable format (dd/MM/yyyy)
