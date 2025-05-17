@@ -45,9 +45,10 @@ public class UserProfile {
     /**
      * User's gender identity
      */
+// Eliminar el enum interno y usar el nuevo
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Gender gender;
+    private Gender gender; // Ahora usa el enum ex
 
     /**
      * Profile creation timestamp
