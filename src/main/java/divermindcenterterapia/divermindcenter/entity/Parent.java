@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -53,7 +54,8 @@ public class Parent {
     @Column(nullable = false) // Contraseña encriptada
     private String passwordHash;
 
-    private Boolean isActive = true; // Cuenta activa/inactiva
+    @Builder.Default // Lombok: asegura que el valor por defecto se use al construir el objeto
+    private Boolean isActive = true; // Valor por defecto explícito
     private LocalDateTime lastLogin; // Último acceso
     private Boolean emailVerified = false; // ¿Verificó su email?
 
@@ -77,7 +79,13 @@ public class Parent {
             cascade = CascadeType.ALL, // Si se borra el padre, se borran sus teléfonos
             orphanRemoval = true // Si se elimina un teléfono de la lista, se borra de la BD
     )
-    private List<Phone> phones;
+    //private List<Phone> phones;
+
+
+    @Builder.Default // Inicializa la lista como vacía
+    private List<Phone> phones = new ArrayList<>();
+
+
 
     // ⏰ FECHA/HORA DE CREACIÓN (¡NUEVO!)
     @CreationTimestamp // Genera automáticamente la fecha al crear el registro

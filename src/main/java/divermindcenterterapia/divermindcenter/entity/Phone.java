@@ -30,7 +30,7 @@ public class Phone {
     private Country country;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id") // Eliminar nullable = false
     private User user;
 
     // Nueva relación con Parent
