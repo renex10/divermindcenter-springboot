@@ -97,4 +97,8 @@ public class UserProfile {
     public enum Gender {
         MALE, FEMALE, NON_BINARY, OTHER
     }
+
+    @OneToOne(mappedBy = "userProfile")
+    private ProfessionalInfo professionalInfo; // Asegúrate de que exista este campo
+
 }

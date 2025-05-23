@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -82,6 +83,7 @@ public class UserServiceImpl implements UserService {
                                 )
                         )
                 )
+                .active(registrationDTO.isActive()) // <- Añade esta línea
                 .build();
 
         User savedUser = userRepository.save(user);        // Creación de teléfonos
@@ -154,7 +156,8 @@ public class UserServiceImpl implements UserService {
                 .rut(user.getDni().getValue())
                 .practiceType(user.getPracticeType())
                 .creationDate(user.getCreatedAt().format(dateFormatter))
-                .creationTime(user.getCreatedAt().format(timeFormatter));
+                .creationTime(user.getCreatedAt().format(timeFormatter))
+                .active(user.isActive()); // <- Campo añadido aquí
 
         if (user.getRehabilitationCenter() != null) {
             builder.rehabilitationCenterId(user.getRehabilitationCenter().getId());
@@ -172,8 +175,22 @@ public class UserServiceImpl implements UserService {
     public UserResponseDTO getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario", "id", id));
-        return mapToResponseDTO(user);
+        return mapToResponseDTO(user); // Eliminé la línea que modificaba el estado activo
     }
+
+    @Override
+    @Transactional
+    public UserResponseDTO updateActiveStatus(Long id, boolean active) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario", "id", id));
+
+        user.setActive(active);
+        User updatedUser = userRepository.save(user);
+        return mapToResponseDTO(updatedUser);
+    }
+
+
+
 
     @Override
     public UserPageResponseDTO getPagedUsers(int pageNumber, int pageSize) {
@@ -192,6 +209,46 @@ public class UserServiceImpl implements UserService {
                 .currentPage(pageNumber)
                 .totalPages(userPage.getTotalPages())
                 .totalUsers(userPage.getTotalElements())
+                .build();
+    }
+
+    private List<PhoneDTO> mapPhonesToDTO(List<Phone> phones) {
+        if (phones == null || phones.isEmpty()) {
+            return List.of(); // Alternativa moderna a Collections.emptyList()
+        }
+
+        return phones.stream()
+                .map(phone -> {
+                    PhoneDTO dto = new PhoneDTO();
+                    dto.setId(phone.getId());
+                    dto.setPhoneNumber(phone.getPhoneNumber());
+                    dto.setPhoneType(phone.getPhoneType());
+                    dto.setCountryId(phone.getCountry() != null ? phone.getCountry().getId() : null);
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+    @Override
+    public UserProfileResponseDTO getUserProfileWithDetails(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario", "id", userId));
+
+        UserProfile profile = user.getProfile();
+        ProfessionalInfo professionalInfo = profile.getProfessionalInfo(); // Ahora debería funcionar
+
+        return UserProfileResponseDTO.builder()
+                .id(user.getId())
+                .firstName(user.getFirstName())
+                .email(user.getEmail())
+                .rut(user.getDni().getValue())
+                .lastName(profile.getLastName())
+                .birthDate(profile.getBirthDate().toString())
+                .gender(profile.getGender().name())
+                .universityName(profile.getUniversity().getName())
+                .biography(professionalInfo.getBiography())
+                .experienceSummary(professionalInfo.getExperienceSummary())
+                .serviceModality(professionalInfo.getServiceModality().name())
+                .phones(mapPhonesToDTO(user.getPhones())) // Método añadido
                 .build();
     }
 }

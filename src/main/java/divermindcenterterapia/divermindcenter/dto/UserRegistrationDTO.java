@@ -140,4 +140,7 @@ public class UserRegistrationDTO {
     @Valid
     @NotNull(message = "La información profesional es obligatoria")
     private ProfessionalInfoDTO professionalInfo;
+
+    @Builder.Default
+    private boolean active = true; // Valor por defecto true
 }

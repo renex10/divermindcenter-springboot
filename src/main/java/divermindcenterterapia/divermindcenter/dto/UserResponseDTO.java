@@ -23,11 +23,15 @@ public class UserResponseDTO {
     private PracticeType practiceType;
     private Long rehabilitationCenterId;
     private Long universityId; // Nuevo campo
+
+    // UserResponseDTO.java
+    private boolean active;
     /**
      * Fecha de creación en formato legible (dd/MM/yyyy)
      * Creation date in human-readable format (dd/MM/yyyy)
      */
     private String creationDate;
+
 
     /**
      * Hora de creación en formato legible (HH:mm)

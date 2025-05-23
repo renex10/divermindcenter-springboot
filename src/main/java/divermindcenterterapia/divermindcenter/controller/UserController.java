@@ -1,8 +1,7 @@
 package divermindcenterterapia.divermindcenter.controller;
 
-import divermindcenterterapia.divermindcenter.dto.UserPageResponseDTO;
-import divermindcenterterapia.divermindcenter.dto.UserRegistrationDTO;
-import divermindcenterterapia.divermindcenter.dto.UserResponseDTO;
+import divermindcenterterapia.divermindcenter.dto.*;
+import divermindcenterterapia.divermindcenter.entity.User;
 import divermindcenterterapia.divermindcenter.exception.*;
 import divermindcenterterapia.divermindcenter.service.UserService;
 import jakarta.validation.Valid;
@@ -67,4 +66,19 @@ public class UserController {
             return ResponseEntity.badRequest().build(); // Error 400 si parámetros son inválidos
         }
     }
+
+    @GetMapping("/{id}/profile")
+    public ResponseEntity<UserProfileResponseDTO> getUserProfile(@PathVariable Long id) {
+        UserProfileResponseDTO profile = userService.getUserProfileWithDetails(id);
+        return ResponseEntity.ok(profile);
+    }
+
+    @PatchMapping("/{id}/active-status")
+    public ResponseEntity<UserResponseDTO> updateActiveStatus(
+            @PathVariable Long id,
+            @RequestParam boolean active) {
+        UserResponseDTO updatedUser = userService.updateActiveStatus(id, active);
+        return ResponseEntity.ok(updatedUser);
+    }
+
 }

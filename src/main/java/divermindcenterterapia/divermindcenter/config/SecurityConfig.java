@@ -27,6 +27,11 @@ public class SecurityConfig {
                                 "/api/users/register",
                                 "/api/users",          // Permite acceso público a la paginación
                                 "/api/users/**",       // Permite acceso público a otros endpoints
+                                "/api/boys",       // Permite acceso público a /api/boys
+                                "/api/boys/**",    // Permite acceso a todas sus subrutas
+                                "/api/parents",
+                                "/api/parents/**",
+
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**"
                         ).permitAll()
